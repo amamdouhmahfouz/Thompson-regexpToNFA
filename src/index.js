@@ -34,11 +34,10 @@
  var fs = require('fs');
 
 const ALPHABET_STATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
 const PRECENDANCE  = {
     '*': 3,
     '.': 2,
-    '|':1
+    '|': 1
 };
 
 /**
@@ -138,143 +137,142 @@ class NFA {
         });
 
     }
-}
 
+    /**
+     * Concatenates two nfa states containers, i.e merges them
+     * @function
+     * @param {NFA} nfaRight 
+     * @returns {NFA}
+     */
+     concat_v3(nfaRight) {
+        let nfa = new NFA();
+        let lastMaxState = Math.max(...this.states);
 
-/**
- * Concatenates two nfa states containers, i.e merges them
- * @function
- * @param {NFA} nfaLeft 
- * @param {NFA} nfaRight 
- * @returns {NFA}
- */
-const concat_v3 = (nfaLeft, nfaRight) => {
-    let nfa = new NFA();
-    let lastMaxState = Math.max(...nfaLeft.states);
-
-    for (let i = 0; i < nfaRight.transitions.length; i++) {
-        nfaRight.transitions[i]["startState"] += lastMaxState;
-        nfaRight.transitions[i]["endState"] = nfaRight.transitions[i]["endState"].map(elem => elem + lastMaxState);
-    }
-    //unify states both from left and right nfa states
-    // nfa.states = new Set([...nfa1.states, ...[...nfa2.states].map(elem => elem + lastMaxState)]);
-    nfa.states = new Set([...nfaLeft.states, ...Array.from(nfaRight.states.values(), e => e + lastMaxState)]);
-    nfa.startState = nfaLeft.startState;
-    nfa.endState = nfaRight.endState.map(e => e + lastMaxState);
-    nfa.transitions = [...nfa.transitions, ...nfaLeft.transitions, ...nfaRight.transitions];
-
-    return nfa;
-}
-
-/**
- * ORs the two nfa states.
- * Creates 3 epsilon transitions, one from a state to 2 states, and the 
- * other from 2 states to 1 state
- * @function
- * @param {NFA} nfaLeft 
- * @param {NFA} nfaRight 
- * @returns {NFA}
- */
-const or = (nfaLeft, nfaRight) => {
-    let nfa = new NFA();
-    let lastMaxState = Math.max(...[...nfaLeft.states].map(elem => elem + 1));
-    
-    nfaLeft.startState += 1;
-    nfaLeft.endState = (typeof nfaLeft.endState === "object") ? nfaLeft.endState.map(elem => elem + 1) : nfaLeft.endState + 1;
-    nfaRight.startState += lastMaxState + 1;
-    nfaRight.endState = nfaRight.endState.map(elem => elem + lastMaxState + 1);
-
-    for (let i = 0; i < nfaLeft.transitions.length; i++) {
-        nfaLeft.transitions[i]["startState"] += 1;
-        nfaLeft.transitions[i]["endState"] = nfaLeft.transitions[i]["endState"].map(elem => elem + 1);
-    }
-
-    for (let i = 0; i < nfaRight.transitions.length; i++) {
-        nfaRight.transitions[i]["startState"] += lastMaxState + 1;
-        nfaRight.transitions[i]["endState"] = nfaRight.transitions[i]["endState"].map(elem => elem + lastMaxState + 1);
-    }
-
-    nfa.startState = 0;
-    nfa.endState = [...nfaRight.endState.map(elem => elem + 1)];
-    nfa.states = new Set([
-        nfa.startState, 
-        ...[...nfaLeft.states].map(elem => elem + 1), 
-        ...[...nfaRight.states].map(elem => elem + lastMaxState + 1),
-        ...nfa.endState
-    ]);
-    
-    // link to upper state and link to lower state
-    nfa.transitions.push({
-        "startState": nfa.startState,
-        "endState": [nfaLeft.startState, nfaRight.startState],
-        "input": "ε"
-    });
-    
-
-    nfa.transitions = [...nfa.transitions, ...nfaLeft.transitions, ...nfaRight.transitions];
-    
-    nfa.transitions.push({
-        "startState": nfaLeft.endState[0],
-        "endState": nfa.endState,
-        "input": "ε"
-    });
-    
-    nfa.transitions.push({
-        "startState": nfaRight.endState[0],
-        "endState": nfa.endState,
-        "input": "ε"
-    });
-
-    return nfa;
-    
-}
-
-/**
- * 
- * @function 
- * @param {NFA} nfa 
- * @returns {NFA}
- */
-const star = (nfa) => {
-    
-    //nfa.states = new Set( [nfa.states].map(elem => elem + 1));
-    nfa.states = new Set(Array.from(nfa.states.values(), e => e + 1));
-    
-    let nfaStarContainer = new NFA();
-    nfaStarContainer.startState = 0;
-    nfa.startState += 1;
-    nfa.endState = nfa.endState.map(elem => elem + 1);
-    
-    nfaStarContainer.endState = [...nfa.endState.map(elem => elem + 1)];
-
-    for (let i = 0; i < nfa.transitions.length; i++) {
-        nfa.transitions[i]["startState"] += 1;
-        nfa.transitions[i]["endState"] = [...nfa.transitions[i]["endState"]].map(elem => elem + 1);
-    }
-
-    nfaStarContainer.states = new Set([
-        nfaStarContainer.startState,
-        ...nfaStarContainer.endState,
-        ...nfa.states
-    ]);
-
-    nfaStarContainer.transitions = [
-        {
-            "startState": nfaStarContainer.startState,
-            "endState": [nfa.startState, ...nfaStarContainer.endState],
-            "input": "ε"
-        },
-        ...nfa.transitions,
-        {
-            "startState": nfa.endState[0] || nfa.endState,
-            "endState": [nfa.startState, ...nfaStarContainer.endState],
-            "input": "ε"
+        for (let i = 0; i < nfaRight.transitions.length; i++) {
+            nfaRight.transitions[i]["startState"] += lastMaxState;
+            nfaRight.transitions[i]["endState"] = nfaRight.transitions[i]["endState"].map(elem => elem + lastMaxState);
         }
-    ];
+        //unify states both from left and right nfa states
+        // nfa.states = new Set([...nfa1.states, ...[...nfa2.states].map(elem => elem + lastMaxState)]);
+        nfa.states = new Set([...this.states, ...Array.from(nfaRight.states.values(), e => e + lastMaxState)]);
+        nfa.startState = this.startState;
+        nfa.endState = nfaRight.endState.map(e => e + lastMaxState);
+        nfa.transitions = [...nfa.transitions, ...this.transitions, ...nfaRight.transitions];
 
-    return nfaStarContainer;
+        return nfa;
+    }
 
+    /**
+     * ORs the two nfa states.
+     * Creates 3 epsilon transitions, one from a state to 2 states, and the 
+     * other from 2 states to 1 state
+     * @function
+     * @param {NFA} nfaRight 
+     * @returns {NFA}
+     */
+     or(nfaRight) {
+        let nfa = new NFA();
+        let lastMaxState = Math.max(...[...this.states].map(elem => elem + 1));
+        
+        this.startState += 1;
+        this.endState = (typeof this.endState === "object") ? this.endState.map(elem => elem + 1) : this.endState + 1;
+        nfaRight.startState += lastMaxState + 1;
+        nfaRight.endState = nfaRight.endState.map(elem => elem + lastMaxState + 1);
+
+        for (let i = 0; i < this.transitions.length; i++) {
+            this.transitions[i]["startState"] += 1;
+            this.transitions[i]["endState"] = this.transitions[i]["endState"].map(elem => elem + 1);
+        }
+
+        for (let i = 0; i < nfaRight.transitions.length; i++) {
+            nfaRight.transitions[i]["startState"] += lastMaxState + 1;
+            nfaRight.transitions[i]["endState"] = nfaRight.transitions[i]["endState"].map(elem => elem + lastMaxState + 1);
+        }
+
+        nfa.startState = 0;
+        nfa.endState = [...nfaRight.endState.map(elem => elem + 1)];
+        nfa.states = new Set([
+            nfa.startState, 
+            ...[...this.states].map(elem => elem + 1), 
+            ...[...nfaRight.states].map(elem => elem + lastMaxState + 1),
+            ...nfa.endState
+        ]);
+        
+        // link to upper state and link to lower state
+        nfa.transitions.push({
+            "startState": nfa.startState,
+            "endState": [this.startState, nfaRight.startState],
+            "input": "ε"
+        });
+        
+
+        nfa.transitions = [...nfa.transitions, ...this.transitions, ...nfaRight.transitions];
+        
+        nfa.transitions.push({
+            "startState": this.endState[0],
+            "endState": nfa.endState,
+            "input": "ε"
+        });
+        
+        nfa.transitions.push({
+            "startState": nfaRight.endState[0],
+            "endState": nfa.endState,
+            "input": "ε"
+        });
+
+        return nfa;
+        
+    }
+
+    /**
+     * 
+     * @function 
+     * @returns {NFA}
+     */
+     star()  {
+        
+        //nfa.states = new Set( [nfa.states].map(elem => elem + 1));
+        this.states = new Set(Array.from(this.states.values(), e => e + 1));
+        
+        let nfaStarContainer = new NFA();
+        nfaStarContainer.startState = 0;
+        this.startState += 1;
+        this.endState = this.endState.map(elem => elem + 1);
+        
+        nfaStarContainer.endState = [...this.endState.map(elem => elem + 1)];
+
+        for (let i = 0; i < this.transitions.length; i++) {
+            this.transitions[i]["startState"] += 1;
+            this.transitions[i]["endState"] = [...this.transitions[i]["endState"]].map(elem => elem + 1);
+        }
+
+        nfaStarContainer.states = new Set([
+            nfaStarContainer.startState,
+            ...nfaStarContainer.endState,
+            ...this.states
+        ]);
+
+        nfaStarContainer.transitions = [
+            {
+                "startState": nfaStarContainer.startState,
+                "endState": [this.startState, ...nfaStarContainer.endState],
+                "input": "ε"
+            },
+            ...this.transitions,
+            {
+                "startState": this.endState[0] || this.endState,
+                "endState": [this.startState, ...nfaStarContainer.endState],
+                "input": "ε"
+            }
+        ];
+
+        return nfaStarContainer;
+
+    }
 }
+
+
+
 
 const convertToNFA = (postfix) => {
 
@@ -290,17 +288,16 @@ const convertToNFA = (postfix) => {
             //pop the last 2 nfas
             nfaRight = nfaStack.pop();
             nfaLeft = nfaStack.pop();
-            let nfa = concat_v3(nfaLeft, nfaRight);
-            nfaStack.push(nfa);
+            nfaStack.push(nfaLeft.concat_v3(nfaRight));
         } else if (token === '|') {
             //ORing
             //pop the last 2 nfas
             nfaRight = nfaStack.pop();
             nfaLeft = nfaStack.pop();
-            let nfa = or(nfaLeft, nfaRight);
-            nfaStack.push(nfa);
+            nfaStack.push(nfaLeft.or(nfaRight));
         } else if (token === '*') {
-            nfaStack.push(star(nfaStack.pop()));
+            let nfa = nfaStack.pop();
+            nfaStack.push(nfa.star());
         }
     }
 
@@ -348,8 +345,7 @@ const parseToRequiredFormat = (nfa) => {
 
 }
 
-const regExp = "(ab)*";
-//const newRegExp = convertToPostfix(insertConcat(regExp));
+const regExp = "a*b*abb";
 const newRegExp = convertToPostfix(regExp);
 const nfa = convertToNFA(newRegExp);
 
