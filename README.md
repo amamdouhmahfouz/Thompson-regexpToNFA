@@ -7,11 +7,13 @@
 $ cd Thompson-regToNFA
 $ npm start
 ```
-### Example:
-change the regExp variable in the code with the required regular expression
-```js
-const regExp = "a*b*abb";
+
+### How to run:
+```sh
+$ npm start
+Enter regular expression: a*b*abb
 ```
+
 ### Output format:
 It outputs in the terminal a json object, and saves this json object into a file called nfa.json
 ```json
@@ -30,8 +32,8 @@ It outputs in the terminal a json object, and saves this json object into a file
 }
 ```
 
-### NOTE:
-> ORing expressions must be in brackets
+### Supported Operators:
 
-    - Supported: regExp = "a(a|b)b"
-    - Unsupported: regExp = "aa|bb"
+- `*`  Example: a*, (a|b)*
+- `|`  Example: a|b, (a|b), aa|b, aa|bb, a(a|b)a
+- concatentation  Example: ab, abc, abcd,  NOTE: **do not** use the `.` explicitly

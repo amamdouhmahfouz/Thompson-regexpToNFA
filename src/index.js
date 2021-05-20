@@ -40,6 +40,32 @@ const PRECENDANCE  = {
     '|': 1
 };
 
+
+const insertBracket = (regExp) => {
+    if (!regExp.includes('|')) {
+        return regExp;
+    }
+    let orIndices = [];
+    for (let i = 0; i < regExp.length; i++) {
+        if (regExp[i] === '|') {
+            orIndices.push(i);
+        }
+    }
+
+    let newRegExp = regExp.slice();
+    let k = 0; //to update the index
+    for (let i of orIndices) {
+        let idx = i + k;
+        //if there are already brackets, then skip this or
+        if (newRegExp.length > 0 && newRegExp[idx-2] === "(" && newRegExp[idx+2] === ")") continue;
+        newRegExp = newRegExp.slice(0,idx-1)+"("+newRegExp.slice(idx-1,idx)+"|"+newRegExp.slice(idx+1)[0]+")"+newRegExp.slice(idx+2)
+        k += 2;
+    }
+
+
+    return newRegExp;
+
+}
 /**
  * Convert the modified regular expression into a postfix notation
  * @function
@@ -47,18 +73,20 @@ const PRECENDANCE  = {
  * @returns {string} 
  */
 const convertToPostfix = (inputRegularExpression) => {
-    
+ 
     const insertConcat = (regExp) => {
 
         let newRegExp = "";
+        let lastToken = regExp[0];
+        let tmpStack = [];
         for (let i = 0; i < regExp.length; i++) {
             newRegExp += regExp[i];
             if (regExp[i] === '(' || regExp[i] === '|') continue;
-    
+
             if (i < regExp.length - 1) {
                 let nextToken = regExp[i+1];
                 if (nextToken === '*' || nextToken === '|' || nextToken === ')') continue;
-    
+
                 //adding a concat operator
                 newRegExp += '.'; 
             }
@@ -68,7 +96,9 @@ const convertToPostfix = (inputRegularExpression) => {
         return newRegExp;
     };
 
-    let regExp = insertConcat(inputRegularExpression);
+    
+
+    let regExp = insertConcat(insertBracket(inputRegularExpression));
 
     let newRegExpQueue = '';
     let tmpStack = []; //stack for operators
@@ -345,20 +375,33 @@ const parseToRequiredFormat = (nfa) => {
 
 }
 
-const regExp = "a*b*abb";
-try {
-    const newRegExp = convertToPostfix(regExp);
-    const nfa = convertToNFA(newRegExp);
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+   
+  readline.question('Enter regular expression: ', regularExpression => {
+    console.log(`You entered ${regularExpression}\n`);
     
-    const parsedOutput = parseToRequiredFormat(nfa);
-    console.log(parsedOutput);
-    
-    fs.writeFile('nfa.json', JSON.stringify(parsedOutput), (err) => {
-      if (err) throw err;
-      console.log('File saved to nfa.json');
-    });
+    const regExp = regularExpression;//"a(b|c)d";
 
-} catch (err) {
-    console.log("regular expression is not valid");
-}
+    try {
+        const newRegExp = convertToPostfix(regExp);
+        const nfa = convertToNFA(newRegExp);
+        
+        const parsedOutput = parseToRequiredFormat(nfa);
+        console.log(parsedOutput);
+        
+        fs.writeFile('nfa.json', JSON.stringify(parsedOutput), (err) => {
+          if (err) throw err;
+          console.log('\nFile saved to nfa.json\n');
+        });
+    
+    } catch (err) {
+        console.log("regular expression is not valid");
+    }
+    readline.close();
+  });
+
+
 
