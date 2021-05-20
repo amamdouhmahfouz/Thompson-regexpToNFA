@@ -35,5 +35,5 @@ It outputs in the terminal a json object, and saves this json object into a file
 ### Supported Operators:
 
 - `*`  Example: a*, (a|b)*
-- `|`  Example: a|b, (a|b), aa|b, aa|bb, a(a|b)a
+- `|` or `+`  Example: a|b, (a|b), aa|b, aa|bb, a(a|b)a, a+b, (a+b), a(a+b)
 - concatentation  Example: ab, abc, abcd,  NOTE: **do not** use the `.` explicitly

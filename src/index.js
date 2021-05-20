@@ -1,4 +1,5 @@
 /**
+ * @author Abdelrahman Mamdouh
  * This program converts a regular expression to its respective NFA.
  * Algorithm:
  *  1. Use Shunting-Yard algorithm to convert regular expression 
@@ -37,21 +38,23 @@ const ALPHABET_STATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 const PRECENDANCE  = {
     '*': 3,
     '.': 2,
-    '|': 1
+    '|': 1,
+    '+': 1
 };
 
 
 const insertBracket = (regExp) => {
-    if (!regExp.includes('|')) {
+    if (!regExp.includes('|') && !regExp.includes('+')) {
         return regExp;
     }
+
     let orIndices = [];
     for (let i = 0; i < regExp.length; i++) {
-        if (regExp[i] === '|') {
+        if (regExp[i] === '|' || regExp[i] === '+') {
             orIndices.push(i);
         }
     }
-
+    
     let newRegExp = regExp.slice();
     let k = 0; //to update the index
     for (let i of orIndices) {
@@ -81,11 +84,11 @@ const convertToPostfix = (inputRegularExpression) => {
         let tmpStack = [];
         for (let i = 0; i < regExp.length; i++) {
             newRegExp += regExp[i];
-            if (regExp[i] === '(' || regExp[i] === '|') continue;
+            if (regExp[i] === '(' || regExp[i] === '|' || regExp[i] === '+') continue;
 
             if (i < regExp.length - 1) {
                 let nextToken = regExp[i+1];
-                if (nextToken === '*' || nextToken === '|' || nextToken === ')') continue;
+                if (nextToken === '*' || nextToken === '|' || nextToken === '+' || nextToken === ')') continue;
 
                 //adding a concat operator
                 newRegExp += '.'; 
@@ -97,14 +100,14 @@ const convertToPostfix = (inputRegularExpression) => {
     };
 
     
-
+    console.log(insertBracket(inputRegularExpression))
     let regExp = insertConcat(insertBracket(inputRegularExpression));
 
     let newRegExpQueue = '';
     let tmpStack = []; //stack for operators
 
     for (let i = 0; i < regExp.length; i++) {
-        if (regExp[i] === '.' || regExp[i] === '|' || regExp[i] === '*') {
+        if (regExp[i] === '.' || regExp[i] === '|' || regExp[i] === '+' || regExp[i] === '*') {
             while (tmpStack.length > 0 && tmpStack[tmpStack.length-1] !== '('
                 && PRECENDANCE[tmpStack[tmpStack.length-1]] >= PRECENDANCE[regExp[i]] ) {
                     newRegExpQueue += tmpStack.pop();
@@ -319,7 +322,7 @@ const convertToNFA = (postfix) => {
             nfaRight = nfaStack.pop();
             nfaLeft = nfaStack.pop();
             nfaStack.push(nfaLeft.concat_v3(nfaRight));
-        } else if (token === '|') {
+        } else if (token === '|' || token === '+') {
             //ORing
             //pop the last 2 nfas
             nfaRight = nfaStack.pop();
@@ -405,3 +408,13 @@ const readline = require('readline').createInterface({
 
 
 
+/*
+{ startingState: 'S0',
+  S0: { isTerminatingState: false, a: [ 'S1' ] },
+  S1: { isTerminatingState: false, Epsilon: [ 'S2', 'S4' ] },
+  S2: { isTerminatingState: false, a: [ 'S3' ] },
+  S4: { isTerminatingState: false, b: [ 'S5' ] },
+  S3: { isTerminatingState: false, Epsilon: [ 'S6' ] },
+  S5: { isTerminatingState: false, Epsilon: [ 'S6' ] },
+  S6: { isTerminating: true } }
+*/
