@@ -346,13 +346,19 @@ const parseToRequiredFormat = (nfa) => {
 }
 
 const regExp = "a*b*abb";
-const newRegExp = convertToPostfix(regExp);
-const nfa = convertToNFA(newRegExp);
+try {
+    const newRegExp = convertToPostfix(regExp);
+    const nfa = convertToNFA(newRegExp);
+    
+    const parsedOutput = parseToRequiredFormat(nfa);
+    console.log(parsedOutput);
+    
+    fs.writeFile('nfa.json', JSON.stringify(parsedOutput), (err) => {
+      if (err) throw err;
+      console.log('File saved to nfa.json');
+    });
 
-const parsedOutput = parseToRequiredFormat(nfa);
-console.log(parsedOutput);
+} catch (err) {
+    console.log("regular expression is not valid");
+}
 
-fs.writeFile('nfa.json', JSON.stringify(parsedOutput), (err) => {
-  if (err) throw err;
-  console.log('File saved to nfa.json');
-});
